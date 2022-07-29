@@ -1,0 +1,79 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// generator erd {
+//   provider = "prisma-erd-generator"
+//   output   = "../ERD.svg"
+// }
+
+model Address {
+  id    Int    @id @default(autoincrement())
+  state String
+  city  String
+  pin   Int
+  User  User[]
+}
+
+model GeoLocation {
+  id   Int    @id @default(autoincrement())
+  lat  Float
+  lon  Float
+  User User[]
+}
+
+model User {
+  id            Int          @id @default(autoincrement())
+  name          String       @db.VarChar()
+  email         String       @unique @db.VarChar()
+  gender        String
+  status        String
+  posts         Post[]
+  location      GeoLocation? @relation(fields: [geoLocationId], references: [id])
+  address       Address?     @relation(fields: [addressId], references: [id])
+  primaryUser   Friendship[] @relation("request")
+  secondaryUser Friendship[] @relation("accept")
+  addressId     Int?
+  geoLocationId Int?
+  commented     Comment[]
+}
+
+// Many to many Relationship,self-refrence
+model Friendship {
+  primaryUser    User    @relation("request", fields: [primaryid], references: [id])
+  primaryid      Int
+  secondaryUser  User    @relation("accept", fields: [secondryid], references: [id])
+  secondryid     Int
+  status         Boolean
+  noncompositeId Int     @unique @default(autoincrement())
+
+  @@id([primaryid, secondryid])
+}
+
+model Post {
+  id        Int       @id @unique @default(autoincrement())
+  title     String
+  postImage String?
+  mainPost  String
+  like      Int       @default(0)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  comments  Comment[]
+}
+
+model Comment {
+  id          Int    @id @unique @default(autoincrement())
+  comment     String
+  post        Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId      Int
+  usercommnet User?  @relation(fields: [userId], references: [id])
+  userId      Int?
+}
